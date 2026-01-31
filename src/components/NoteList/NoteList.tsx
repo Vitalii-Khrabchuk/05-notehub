@@ -1,41 +1,19 @@
 import css from "./NoteList.module.css";
-
 import { deleteNote } from "../../services/noteService.ts";
 import { type Note } from "../../types/note.ts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface NoteListProps {
   noteList: Note[];
-  setIsModal: (type: boolean) => void;
-  setTypeModal: (type: "form" | "error" | "create" | "delete") => void;
-  setMessage: (mes: Note) => void;
-  setError: (er: string) => void;
 }
 
-export default function NoteList({
-  noteList,
-  setError,
-  setIsModal,
-  setMessage,
-  setTypeModal,
-}: NoteListProps) {
+export default function NoteList({ noteList }: NoteListProps) {
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await deleteNote(id);
-      return res;
-    },
-    onSuccess: (data) => {
+    mutationFn: (id: string) => deleteNote(id),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["note"] });
-      setIsModal(true);
-      setTypeModal("delete");
-      setMessage(data);
-    },
-    onError: (error) => {
-      setIsModal(true);
-      setTypeModal("error");
-      setError(error.message);
     },
   });
 
@@ -50,8 +28,9 @@ export default function NoteList({
             <button
               onClick={() => deleteMutation.mutate(note.id)}
               className={css.button}
+              disabled={deleteMutation.isPending}
             >
-              Delete
+              {deleteMutation.isPending ? "..." : "Delete"}
             </button>
           </div>
         </li>

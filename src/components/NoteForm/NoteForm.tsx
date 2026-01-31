@@ -1,45 +1,28 @@
 import css from "./NoteForm.module.css";
-
 import { ErrorMessage, Field, Form, Formik, type FormikHelpers } from "formik";
 import { useId } from "react";
-import { type NewNote, type Note } from "../../types/note.ts";
+import { type NewNote } from "../../types/note.ts";
 import * as Yup from "yup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNote } from "../../services/noteService.ts";
 
 interface NoteFormProps {
   onCancel: () => void;
-  setIsModal: (type: boolean) => void;
-  setTypeModal: (type: "form" | "error" | "create" | "delete") => void;
-  setMessage: (mes: Note) => void;
-  setError: (er: string) => void;
 }
 
-export default function NoteForm({
-  onCancel,
-  setError,
-  setIsModal,
-  setMessage,
-  setTypeModal,
-}: NoteFormProps) {
+export default function NoteForm({ onCancel }: NoteFormProps) {
   const id = useId();
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: async (data: NewNote) => {
-      const res = await createNote(data);
-      return res;
-    },
-    onSuccess: (data) => {
+    mutationFn: (data: NewNote) => createNote(data),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["note"] });
-      setIsModal(true);
-      setTypeModal("create");
-      setMessage(data);
+      onCancel();
     },
+
     onError: (error) => {
-      setIsModal(true);
-      setTypeModal("error");
-      setError(error.message);
+      console.error("Failed to create note:", error.message);
     },
   });
 
@@ -56,15 +39,15 @@ export default function NoteForm({
 
   const validationSchema = Yup.object().shape({
     title: Yup.string()
-      .min(3, "Min length 3 simbols.")
-      .max(50, "Max length 50 simbols.")
+      .min(3, "Min length 3 symbols.")
+      .max(50, "Max length 50 symbols.")
       .required("This field is required"),
-    content: Yup.string().max(500, "Max length 500 simbols."),
+    content: Yup.string().max(500, "Max length 500 symbols."),
     tag: Yup.string()
       .required("This field is required")
       .oneOf(
         ["Todo", "Work", "Personal", "Meeting", "Shopping"],
-        "Invalid tag."
+        "Invalid tag.",
       ),
   });
 
@@ -114,8 +97,12 @@ export default function NoteForm({
           <button onClick={onCancel} type="button" className={css.cancelButton}>
             Cancel
           </button>
-          <button type="submit" className={css.submitButton}>
-            Create note
+          <button
+            type="submit"
+            className={css.submitButton}
+            disabled={createMutation.isPending}
+          >
+            {createMutation.isPending ? "Creating..." : "Create note"}
           </button>
         </div>
       </Form>
