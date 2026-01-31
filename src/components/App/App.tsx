@@ -25,9 +25,10 @@ export default function App() {
   const [message, setMessage] = useState<Note | null>(null);
   const [error, setError] = useState("");
 
+
   const { data } = useQuery({
     queryKey: ["note", page, word],
-    queryFn: () => fetchNotes(page, word),
+    queryFn: () => fetchNotes({ page, search: word }), 
     placeholderData: keepPreviousData,
   });
 
